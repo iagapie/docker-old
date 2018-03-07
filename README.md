@@ -1,10 +1,10 @@
 # Docker (for DEV)
 
----
+
 ## Credentials: SSH, FTP
 **user:** `root`
 **pass:** `root`
----
+
 
 ## List of repositories:
 	* iagapie/alpine-3.7
@@ -16,13 +16,16 @@
 	* iagapie/alpine-php-7.1
 	* iagapie/alpine-php-7.2
 
+
 ### Generate self signed certificate example:
 `openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mysite.com.key -out mysite.com.crt`
 
+
 ### Docker run example:
 `docker run -itd --name php-7.2 -p 2072:20 -p 2172:21 -p 2272:22 -p 9000 -p 9009 -v $PWD:/app iagapie/alpine-php-7.2`
+
 **See docker-compose.yml for more complex example**
----
+
 
 ### PhpStorm Xdebug
 - Languages & Frameworks > PHP > Add > Remote...
