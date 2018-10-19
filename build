@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+if [ -z "$1" ]; then
+    tag="latest"
+else
+    tag="$1"
+fi
+
+path=$(dirname "$0")
+
+docker build -t iagapie/magento2-php70-apache:$tag $path
+
+if [ "$2" = 'yes' ]; then
+    docker push iagapie/magento2-php70-apache:$tag
+fi
