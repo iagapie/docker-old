@@ -1,15 +1,4 @@
-# Frontend for docker
+# Docker Magento 2 Dev
 
-## Credentials
-**user:** `root`
-**pass:** `root`
-
-## Install Steps:
-    # cd <project-dir>
-	# docker network create traefik
-	# docker-compose up -d
-	# ./frontend/bin/exec bash
-	# composer install
-	# yarn install
-	# yarn encore [dev|prod]
-	
+** Docker Image:
+`iagapie/magento2-php70-apache:0.1`

@@ -3,15 +3,3 @@
 **/.DS_Store
 **/._.DS_Store
 /.idea/
-.env
-/frontend/html/.env
-/frontend/html/public/bundles/
-/frontend/html/var/
-/frontend/html/vendor/
-/frontend/html/.phpunit
-/frontend/html/phpunit.xml
-/frontend/html/.web-server-pid
-/frontend/html/node_modules/
-/frontend/html/public/build/
-/frontend/html/npm-debug.log
-/frontend/html/yarn-error.log
