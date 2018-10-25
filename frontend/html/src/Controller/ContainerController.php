@@ -77,6 +77,11 @@ class ContainerController extends AbstractController
     public function create(Request $request): Response
     {
         $data = $request->request->all();
+
+        if (false === isset($data['hostConfig'])) {
+            $data = json_decode($request->getContent(), true);
+        }
+
         $data['hostConfig'] = array_filter($data['hostConfig']);
         $data = array_filter($data);
 
