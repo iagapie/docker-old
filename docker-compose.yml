@@ -1,141 +1,27 @@
-version: "3.4"
+version: "3"
+
+networks:
+  traefik:
+    external:
+      name: web
 
 services:
-  httpd:
-    container_name: httpd
-    image: iagapie/alpine-apache-2.4:0.1
+  apache2:
+    container_name: apache2
+    image: iagapie/apache2-alpine
+    networks:
+      - web
     ports:
-      - "2024:20"
-      - "2124:21"
-      - "2224:22"
       - "80:80"
       - "443:443"
     volumes:
-      - "${PROJECT_ROOT}:/app:ro"
-    networks:
-      - server
-    depends_on:
-      - php56
-      - php70
-      - php71
-      - php72
+      - "$PWD/app/www:/var/www/html:ro"
+      - "$PWD/app/httpd-my.conf:/usr/local/apache2/conf/extra/httpd-my.conf:ro"
 
-  nginx:
-    container_name: nginx
-    image: iagapie/alpine-nginx-1.13:0.1
-    ports:
-      - "2013:20"
-      - "2113:21"
-      - "2213:22"
-      - "8000:80"
-      - "8083:443"
+  php71-fpm:
+    container_name: m2-php71-fpm
+    image: iagapie/m2-php71-fpm
+    networks:
+      - web
     volumes:
-      - "${PROJECT_ROOT}:/app:ro"
-    networks:
-      - server
-    depends_on:
-      - php56
-      - php70
-      - php71
-      - php72
-
-  php56:
-    container_name: php56
-    image: iagapie/alpine-php-5.6:0.1
-    expose:
-      - 9000
-    ports:
-      - "2056:20"
-      - "2156:21"
-      - "2256:22"
-      - "9056:9009"
-    volumes:
-      - "${PROJECT_ROOT}:/app"
-    networks:
-      - database
-      - server
-    depends_on:
-      - mysql
-
-  php70:
-    container_name: php70
-    image: iagapie/alpine-php-7.0:0.1
-    expose:
-      - 9000
-    ports:
-      - "2070:20"
-      - "2170:21"
-      - "2270:22"
-      - "9070:9009"
-    volumes:
-      - "${PROJECT_ROOT}:/app"
-    networks:
-      - database
-      - server
-    depends_on:
-      - mysql
-
-  php71:
-    container_name: php71
-    image: iagapie/alpine-php-7.1:0.1
-    expose:
-      - 9000
-    ports:
-      - "2071:20"
-      - "2171:21"
-      - "2271:22"
-      - "9071:9009"
-    volumes:
-      - "${PROJECT_ROOT}:/app"
-    networks:
-      - database
-      - server
-    depends_on:
-      - mysql
-
-  php72:
-    container_name: php72
-    image: iagapie/alpine-php-7.2:0.1
-    expose:
-      - 9000
-    ports:
-      - "2072:20"
-      - "2172:21"
-      - "2272:22"
-      - "9072:9009"
-    volumes:
-      - "${PROJECT_ROOT}:/app"
-    networks:
-      - database
-      - server
-    depends_on:
-      - mysql
-
-  mysql:
-    container_name: mariadb
-    image: mariadb:latest
-    volumes:
-      - mysql-data:/var/lib/mysql
-    networks:
-      - database
-    environment:
-      MYSQL_ROOT_PASSWORD: "${MYSQL_PASSWORD}"
-
-  phpmyadmin:
-    container_name: phpmyadmin
-    image: phpmyadmin/phpmyadmin
-    ports:
-      - "8080:80"
-    networks:
-      - database
-    depends_on:
-      - mysql
-    environment:
-      PMA_HOST: mysql
-
-volumes:
-  mysql-data:
-
-networks:
-  database:
-  server:
+      - "$PWD/app/www:/var/www/html"

@@ -1,0 +1,156 @@
+#!/bin/bash
+
+set -ef
+set -o pipefail
+
+VERSION=0.1
+
+usage()
+{
+    echo "Create Apache 2 Dockerfile
+
+Usage: $(basename $0) [options]
+  -h,  --help             for help
+  -v,  --version          show version
+
+Mandatory:
+  -av, --apache-version   version of apache2 (use 2.4.35 instead of 2.4.37)
+
+Optional:
+  -p,  --path          Destination of Dockerfile, default create in \`$(realpath $(dirname $0))\` directory
+       --uid           User ID, default: 1000
+       --gid           Group ID, default: 1000
+       --root          Root password, default: root"
+}
+
+path=$(realpath $(dirname $0))
+root=root
+uid=1000
+gid=1000
+
+while [[ "$1" != "" ]]; do
+    case $1 in
+        -av | --apache-version ) shift
+                                 apache=$1
+                                 ;;
+        -p | --path )           shift
+								path=$(echo $1 | sed 's:/*$::')
+								;;
+        --root )				shift
+								root=$1
+								;;
+		--uid ) 				shift
+								uid=$1
+								;;
+		--gid ) 				gid=$1
+								;;
+		-v | --version )        echo "Version $VERSION"
+								exit 0
+								;;
+        -h | --help )           usage
+                                exit
+                                ;;
+        * )                     usage
+                                exit 1
+    esac
+    shift
+done
+
+if [[ -z "$apache" ]]; then
+	usage
+	exit 1
+fi
+
+domain=localhost
+file="$path/Dockerfile.httpd-$apache-alpine"
+
+echo "FROM httpd:$apache-alpine
+
+MAINTAINER Igor Agapie <igoragapie@gmail.com>
+
+ENV ROOT_PASSWD $root
+
+RUN apk add --no-cache --virtual .persistent-deps \\
+		bash \\
+		bash-completion \\
+		musl-dev \\
+		util-linux \\
+		shadow \\
+		openssl \\
+		openssh-client \\
+		nano \\
+		vim \\
+		zip \\
+		unzip \\
+		git \\
+	&& groupmod -g $gid www-data \\
+	&& usermod -u $uid www-data \\
+	&& chsh -s /bin/bash www-data \\
+	&& chown -R www-data:www-data /home/www-data \\
+	&& echo \"root:\$ROOT_PASSWD\"|chpasswd \\
+	&& chown www-data:www-data \$HTTPD_PREFIX \\
+	&& mkdir -p /var/www/html \\
+	&& cp \$HTTPD_PREFIX/htdocs/* /var/www/html/ \\
+	&& chown -R www-data:www-data /var/www \\
+	&& chmod -R 777 /var/www
+
+RUN mv /etc/profile.d/color_prompt /etc/profile.d/color_prompt.sh \\
+	&& echo 'if [ \"\${PS1-}\" ]; then' > /etc/profile.d/00.sh \\
+	&& echo '    if [ \"\${BASH-}\" ] && [ \"\$BASH\" != \"/bin/sh\" ]; then' >> /etc/profile.d/00.sh \\
+	&& echo '        # The file bash.bashrc already sets the default PS1.' >> /etc/profile.d/00.sh \\
+	&& echo \"        # PS1='\\h:\\w\\\\\$ '\" >> /etc/profile.d/00.sh \\
+	&& echo '        if [ -f /etc/bash.bashrc ]; then' >> /etc/profile.d/00.sh \\
+	&& echo '            . /etc/bash.bashrc' >> /etc/profile.d/00.sh \\
+	&& echo '        fi' >> /etc/profile.d/00.sh \\
+	&& echo '    else' >> /etc/profile.d/00.sh \\
+	&& echo '        if [ \"\`id -u\`\" -eq 0 ]; then' >> /etc/profile.d/00.sh \\
+	&& echo \"            PS1='# '\" >> /etc/profile.d/00.sh \\
+	&& echo '        else' >> /etc/profile.d/00.sh \\
+	&& echo \"            PS1='\\\$ '\" >> /etc/profile.d/00.sh \\
+	&& echo '        fi' >> /etc/profile.d/00.sh \\
+	&& echo '    fi' >> /etc/profile.d/00.sh \\
+	&& echo 'fi' >> /etc/profile.d/00.sh
+
+RUN sed -i \\
+		-e 's/^#\(Include .*httpd-ssl.conf\)/\1/' \\
+        -e 's/^#\(Include .*httpd-default.conf\)/\1/' \\
+        -e 's/^#\(LoadModule .*mod_ssl.so\)/\1/' \\
+        -e 's/^#\(LoadModule .*mod_socache_shmcb.so\)/\1/' \\
+        -e 's/^#\(LoadModule .*mod_rewrite.so\)/\1/' \\
+        -e 's/^#\(LoadModule .*mod_proxy.so\)/\1/' \\
+        -e 's/^#\(LoadModule .*mod_proxy_fcgi.so\)/\1/' \\
+        -e 's/^#\(LoadModule .*mod_deflate.so\)/\1/' \\
+        -e 's/^#\(LoadModule .*mod_mime_magic.so\)/\1/' \\
+        -e 's/User daemon/User www-data/' \\
+        -e 's/Group daemon/Group www-data/' \\
+        -e 's/DirectoryIndex index.html/DirectoryIndex index.php index.html/' \\
+        -e 's#/usr/local/apache2/htdocs#/var/www/html#g' \\
+        -e '/<Directory \"\/var\/www\/html\">/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' \\
+        conf/httpd.conf
+
+RUN touch conf/extra/httpd-my.conf \\
+	&& echo 'Include conf/extra/httpd-my.conf' >> conf/httpd.conf
+
+RUN sed -i \\
+		-e 's#/usr/local/apache2/htdocs#/var/www/html#g' \\
+		-e 's/ServerName/#ServerName/' \\
+		-e 's/ServerAdmin/#ServerAdmin/' \\
+		conf/extra/httpd-ssl.conf
+
+RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \\
+	-keyout conf/server.key \\
+	-out conf/server.crt \\
+	-subj \"/C=IT/ST=Rome/L=Rome/O=It OrgName/OU=IT Department/CN=$domain\"
+
+RUN chown www-data:www-data conf/server.*
+
+WORKDIR /var/www/html
+
+EXPOSE 80 443
+" > ${file}
+
+echo "Created successfully.
+
+  docker build -t [repository:tag] -f $file .
+
+"

@@ -1,0 +1,77 @@
+#!/bin/bash
+
+set -ef
+set -o pipefail
+
+usage()
+{
+    echo "
+Usage: $(basename $0) [options]
+  -h, --help             for help
+
+Optional:
+  -b, --build             Build images. Values: yes or no
+  -p, --push              Push images. Values: yes or no
+  -a, --apache-version    Apache2 image version
+  -f, --php-fpm-version   PHP FPM image version
+  -c, --php-cli-version   PHP CLI image version
+"
+}
+
+path=$(realpath $(dirname $0))
+b="no"
+p="no"
+
+while [[ "$1" != "" ]]; do
+    case $1 in
+    	  -p | --push )             shift
+								                  p=$1
+								                  ;;
+        -b | --build )            shift
+                                  b=$1
+                                  ;;
+        -a | --apache-version )   shift
+                                  apache=$1
+                                  ;;
+        -f | --php-fpm-version )  shift
+								                  pf=$1
+								                  ;;
+        -c | --php-cli-version )  shift
+								                  pc=$1
+								                  ;;
+        -h | --help )             usage
+                                  exit
+                                  ;;
+        * )                       usage
+                                  exit 1
+    esac
+    shift
+done
+
+if [[ -z "$apache" ]]; then
+    apache="latest"
+fi
+
+if [[ -z "$pf" ]]; then
+    pf="latest"
+fi
+
+if [[ -z "$pc" ]]; then
+    pc="latest"
+fi
+
+$path/create-php-dockerfile -pv 7.1 -t cli
+$path/create-php-dockerfile -pv 7.1 -t fpm
+$path/create-apache-dockerfile -av 2.4.35
+
+if [[ "$b" == "yes" ]]; then
+    docker build -t iagapie/apache2-alpine:${apache} -f $path/Dockerfile.httpd-2.4.35-alpine .
+    docker build -t iagapie/m2-php71-fpm:${pf} -f $path/Dockerfile.php-7.1-fpm-alpine .
+    docker build -t iagapie/m2-php71-cli:${pc} -f $path/Dockerfile.php-7.1-cli-alpine .
+fi
+
+if [[ "$p" == "yes" ]]; then
+    docker push iagapie/apache2-alpine:${apache}
+    docker push iagapie/m2-php71-fpm:${pf}
+    docker push iagapie/m2-php71-cli:${pc}
+fi
