@@ -232,12 +232,16 @@ RUN echo '#!/bin/sh' >> /usr/local/bin/xdebug \\
 	 && echo '' >> /usr/local/bin/xdebug \\
 	 && echo 'if [ -s \"/usr/local/etc/php/conf.d/xdebug.ini\" ]; then' >> /usr/local/bin/xdebug \\
 	 && echo '    mv /usr/local/etc/php/conf.d/xdebug.ini /usr/local/etc/php/conf.d/xdebug.iniOLD \' >> /usr/local/bin/xdebug \\
-	 && echo '    && /etc/init.d/apache2 force-reload \' >> /usr/local/bin/xdebug \\
-	 && echo '    && echo \"========= XDebug was disabled =========\"' >> /usr/local/bin/xdebug \\
+	 && echo '    if [[ -f \"/etc/init.d/apache2\" ]]: then' \\
+	 && echo '        /etc/init.d/apache2 force-reload \' >> /usr/local/bin/xdebug \\
+	 && echo '    fi' \\
+	 && echo '    echo \"========= XDebug was disabled =========\"' >> /usr/local/bin/xdebug \\
 	 && echo 'else' >> /usr/local/bin/xdebug \\
 	 && echo '    mv /usr/local/etc/php/conf.d/xdebug.iniOLD /usr/local/etc/php/conf.d/xdebug.ini \' >> /usr/local/bin/xdebug \\
-	 && echo '    && /etc/init.d/apache2 force-reload \' >> /usr/local/bin/xdebug \\
-	 && echo '    && echo \"========= XDebug was enabled =========\"' >> /usr/local/bin/xdebug \\
+	 && echo '    if [[ -f \"/etc/init.d/apache2\" ]]: then' \\
+	 && echo '        /etc/init.d/apache2 force-reload \' >> /usr/local/bin/xdebug \\
+	 && echo '    fi' \\
+	 && echo '    echo \"========= XDebug was enabled =========\"' >> /usr/local/bin/xdebug \\
 	 && echo 'fi' >> /usr/local/bin/xdebug \\
 	 && chmod +x /usr/local/bin/xdebug \\
 	 && echo 'xdebug.default_enable=1' >> /usr/local/etc/php/conf.d/custom-xdebug.ini \\
